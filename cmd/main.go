@@ -94,7 +94,7 @@ func Init1000Blocks(ctx context.Context, service *service.Service, lastReceiveBl
 
 	var blockByNumber bitmedia_api.BlockByNumber
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 1000; i++ {
 
 		temp := lastReceiveBlock - int64(i)
 		hexInt := strconv.FormatInt(temp, 16)
