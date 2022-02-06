@@ -2,12 +2,16 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	api "github.com/bitmedia-api"
+	_ "github.com/gobeam/mongo-go-pagination"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const BlocksByNumber = "BlocksByNumber"
+const Transaction = "Transaction"
+const perPage int64 = 9
 
 type EthMongo struct {
 	*mongo.Database
@@ -17,137 +21,125 @@ func NewEthMongo(db *mongo.Database) *EthMongo {
 	return &EthMongo{Database: db}
 }
 
-func (r *EthMongo) SaveBlockByNumber(ctx context.Context, blockByNumber api.BlockByNumber) error {
-	_, err := r.Database.Collection(BlocksByNumber).InsertOne(ctx, blockByNumber)
+func (r *EthMongo) SaveTransactionByBlock(ctx context.Context, transactions []api.Transaction) error {
+
+	if transactions == nil {
+		return nil
+	}
+
+	var res []interface{}
+
+	for _, tr := range transactions {
+		res = append(res, tr)
+	}
+
+	_, err := r.Database.Collection(Transaction).InsertMany(ctx, res)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	return nil
 }
 
-func (r *EthMongo) GetTransactionByHash(ctx context.Context, hash string) (result api.Result, err error) {
-	filter := bson.M{"result.transactions.hash": hash}
+func (r *EthMongo) GetTransactionsByHash(ctx context.Context, hash string) (api.Transaction, error) {
+	filter := bson.M{"hash": hash}
 
-	var block api.BlockByNumber
+	var transaction api.Transaction
 
-	err = r.Database.Collection(BlocksByNumber).FindOne(ctx, filter).Decode(&block)
-
-	for _, transaction := range block.Result.Transactions {
-		if transaction.Hash == hash {
-			result = block.Result
-			break
-		}
+	err := r.Database.Collection(Transaction).FindOne(ctx, filter).Decode(&transaction)
+	if err != nil {
+		return api.Transaction{}, err
 	}
 
-	return result, nil
+	return transaction, nil
 }
 
-func (r *EthMongo) GetTransactionByUserFrom(ctx context.Context, hashUserFrom string) (result []api.Result, err error) {
-	filter := bson.M{"result.transactions.from": hashUserFrom}
+func (r *EthMongo) GetTransactionsByUserFrom(ctx context.Context, hashUserFrom string, page int64) (transactions []api.Transaction, err error) {
+	filter := bson.M{"from": hashUserFrom}
 
-	cur, err := r.Database.Collection(BlocksByNumber).Find(ctx, filter)
+	findOptions := pagination(page)
+
+	cur, err := r.Database.Collection(Transaction).Find(ctx, filter, findOptions)
 	if cur.Err() != nil {
 		return nil, err
 	}
 
-	var blocks []api.BlockByNumber
-
-	var transactions []api.Transactions
-
-	if err = cur.All(ctx, &blocks); err != nil {
-		return result, err
-	}
-	for i := range blocks {
-		for j := range blocks[i].Result.Transactions {
-			if blocks[i].Result.Transactions[j].From == hashUserFrom {
-				transactions = append(transactions, blocks[i].Result.Transactions[j])
-			}
-		}
-		block := api.BlockByNumber{
-			Result: api.Result{
-				BaseFeePerGas: blocks[i].Result.BaseFeePerGas,
-				Timestamp:     blocks[i].Result.Timestamp,
-				Transactions:  transactions,
-			},
-		}
-		result = append(result, block.Result)
+	if err = cur.All(ctx, &transactions); err != nil {
+		return nil, err
 	}
 
-	return result, nil
+	return transactions, nil
 }
 
-func (r *EthMongo) GetTransactionByBlock(ctx context.Context, tag string) (t api.Result, err error) {
-	filter := bson.M{"result.transactions.blockNumber": tag}
+func (r *EthMongo) GetTransactionsByBlock(ctx context.Context, tag string, page int64) (transactions []api.Transaction, err error) {
+	filter := bson.M{"blockNumber": tag}
 
-	var block api.BlockByNumber
+	findOptions := pagination(page)
 
-	err = r.Database.Collection(BlocksByNumber).FindOne(ctx, filter).Decode(&block)
-
-	return block.Result, err
-}
-
-func (r *EthMongo) GetTransactionByUserTo(ctx context.Context, hashUserTo string) (result []api.Result, err error) {
-	filter := bson.M{"result.transactions.to": hashUserTo}
-
-	cur, err := r.Database.Collection(BlocksByNumber).Find(ctx, filter)
+	cur, err := r.Database.Collection(Transaction).Find(ctx, filter, findOptions)
 	if cur.Err() != nil {
 		return nil, err
 	}
 
-	var blocks []api.BlockByNumber
-
-	var transactions []api.Transactions
-	if err = cur.All(ctx, &blocks); err != nil {
-		return result, err
+	if err = cur.All(ctx, &transactions); err != nil {
+		return nil, err
 	}
 
-	for i := range blocks {
-		for j := range blocks[i].Result.Transactions {
-			if blocks[i].Result.Transactions[j].To == hashUserTo {
-				transactions = append(transactions, blocks[i].Result.Transactions[j])
-			}
-		}
-		block := api.BlockByNumber{
-			Result: api.Result{
-				BaseFeePerGas: blocks[i].Result.BaseFeePerGas,
-				Timestamp:     blocks[i].Result.Timestamp,
-				Transactions:  transactions,
-			},
-		}
-		result = append(result, block.Result)
-	}
-	return result, nil
+	return transactions, nil
 }
 
-func (r *EthMongo) GetTransactionByTimestamp(ctx context.Context, timestamp string) (result []api.Result, err error) {
-	filter := bson.M{"result.timestamp": timestamp}
+func (r *EthMongo) GetTransactionsByUserTo(ctx context.Context, hashUserTo string, page int64) (transactions []api.Transaction, err error) {
+	filter := bson.M{"to": hashUserTo}
 
-	cur, err := r.Database.Collection(BlocksByNumber).Find(ctx, filter)
+	findOptions := pagination(page)
+
+	cur, err := r.Database.Collection(Transaction).Find(ctx, filter, findOptions)
 	if cur.Err() != nil {
 		return nil, err
 	}
 
-	var blocks []api.BlockByNumber
-
-	var transactions []api.Transactions
-
-	if err = cur.All(ctx, &blocks); err != nil {
-		return result, err
-	}
-	for i := range blocks {
-		if blocks[i].Result.Timestamp == timestamp {
-			transactions = blocks[i].Result.Transactions
-		}
-		block := api.BlockByNumber{
-			Result: api.Result{
-				BaseFeePerGas: blocks[i].Result.BaseFeePerGas,
-				Timestamp:     blocks[i].Result.Timestamp,
-				Transactions:  transactions,
-			},
-		}
-		result = append(result, block.Result)
+	if err = cur.All(ctx, &transactions); err != nil {
+		return nil, err
 	}
 
-	return result, nil
+	return transactions, nil
+}
+
+func (r *EthMongo) GetTransactionsByTimestamp(ctx context.Context, timestamp string, page int64) (transactions []api.Transaction, err error) {
+	filter := bson.M{"timestamp": timestamp}
+
+	findOptions := pagination(page)
+
+	cur, err := r.Database.Collection(Transaction).Find(ctx, filter, findOptions)
+	if cur.Err() != nil {
+		return nil, err
+	}
+
+	if err = cur.All(ctx, &transactions); err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
+}
+
+func (r *EthMongo) GetBlockNumbers(ctx context.Context) (b []interface{}, err error) {
+	res, err := r.Database.Collection(Transaction).Distinct(ctx, "blockNumber", bson.D{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, result := range res {
+		b = append(b, result)
+	}
+
+	return b, nil
+}
+
+func pagination(page int64) *options.FindOptions {
+	var findOptions *options.FindOptions
+	findOptions = options.Find()
+	findOptions.SetLimit(perPage)
+	findOptions.SetSkip((page - 1) * perPage)
+	return findOptions
 }

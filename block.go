@@ -1,22 +1,21 @@
 package bitmedia_api
 
 type Block struct {
-	JSONRpc string `json:"jsonrpc" bson:"jsonrpc"`
-	ID      int    `json:"id" bson:"id"`
-	Result  string `json:"result" bson:"_id"`
+	JSONRpc string `json:"jsonrpc"`
+	ID      int    `json:"id"`
+	Result  string `json:"result"`
 }
 
 type BlockByNumber struct {
-	id      string `bson:"_id"`
-	JSONRpc string `json:"jsonrpc" bson:"jsonrpc"`
-	ID      int    `json:"id" bson:"id"`
-	Result  Result `json:"result" bson:"result"`
+	JSONRpc string `json:"jsonrpc"`
+	ID      int    `json:"id"`
+	Result  Result `json:"result"`
 }
 
 type Result struct {
-	BaseFeePerGas string         `json:"baseFeePerGas" bson:"baseFeePerGas"`
-	Timestamp     string         `json:"timestamp" bson:"timestamp"`
-	Transactions  []Transactions `json:"transactions" bson:"transactions"`
+	BaseFeePerGas string         `json:"baseFeePerGas"`
+	Timestamp     string         `json:"timestamp"`
+	Transactions  []Transactions `json:"transactions,omitempty"`
 }
 
 type Transactions struct {
@@ -25,4 +24,14 @@ type Transactions struct {
 	To          string `json:"to" bson:"to"`
 	GasPrice    string `json:"gasPrice" bson:"gasPrice"`
 	Hash        string `json:"hash" bson:"hash"`
+}
+
+type Transaction struct {
+	BaseFeePerGas string `json:"baseFeePerGas" bson:"baseFeePerGas"`
+	Timestamp     string `json:"timestamp" bson:"timestamp"`
+	BlockNumber   string `json:"blockNumber" bson:"blockNumber"`
+	From          string `json:"from" bson:"from"`
+	To            string `json:"to" bson:"to"`
+	GasPrice      string `json:"gasPrice" bson:"gasPrice"`
+	Hash          string `json:"hash" bson:"hash"`
 }

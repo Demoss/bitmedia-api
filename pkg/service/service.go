@@ -7,12 +7,12 @@ import (
 )
 
 type Eth interface {
-	SaveBlockByNumber(ctx context.Context, blockByNumber api.BlockByNumber) error
-	GetTransactionByHash(ctx context.Context, hash string) (api.Result, error)
-	GetTransactionByUserFrom(ctx context.Context, hashUserFrom string) (t []api.Result, err error)
-	GetTransactionByBlock(ctx context.Context, tag string) (t api.Result, err error)
-	GetTransactionByUserTo(ctx context.Context, hashUserFrom string) (t []api.Result, err error)
-	GetTransactionByTimestamp(ctx context.Context, timestamp string) (t []api.Result, err error)
+	SaveTransactionsByBlock(ctx context.Context, blockByNumber api.BlockByNumber) error
+	GetTransactionsByHash(ctx context.Context, hash string) (api.Transaction, error)
+	GetTransactionsByUserFrom(ctx context.Context, hashUserFrom string, page int64) (t []api.Transaction, err error)
+	GetTransactionsByBlock(ctx context.Context, tag string, page int64) (t []api.Transaction, err error)
+	GetTransactionsByUserTo(ctx context.Context, hashUserFrom string, page int64) (t []api.Transaction, err error)
+	GetTransactionsByTimestamp(ctx context.Context, timestamp string, page int64) (t []api.Transaction, err error)
 }
 type Service struct {
 	Eth

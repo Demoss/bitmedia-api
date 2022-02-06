@@ -16,9 +16,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
 	router.GET("/hash/:h", h.GetTransactionByHash)
-	router.GET("/from/:from", h.GetTransactionByUserFrom)
-	router.GET("/block/:block", h.GetTransactionByBlock)
-	router.GET("/to/:to", h.GetTransactionByUserTo)
-	router.GET("/timestamp/:tm", h.GetTransactionByTimestamp)
+	router.GET("/from/:from", h.GetTransactionsByUserFrom)
+	router.GET("/block/:block", h.GetTransactionsByBlock)
+	router.GET("/to/:to", h.GetTransactionsByUserTo)
+	router.GET("/timestamp/:tm", h.GetTransactionsByTimestamp)
 	return router
 }

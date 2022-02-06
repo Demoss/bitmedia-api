@@ -71,9 +71,7 @@ func run() error {
 		}
 	}()
 
-	Init1000Blocks(ctx, services, lastReceivedBlock)
-
-	fmt.Println(handlers)
+	go Init1000Blocks(ctx, services, lastReceivedBlock)
 
 	srv := new(bitmedia_api.Server)
 	go func() {
@@ -99,7 +97,6 @@ func Init1000Blocks(ctx context.Context, service *service.Service, lastReceiveBl
 		temp := lastReceiveBlock - int64(i)
 		hexInt := strconv.FormatInt(temp, 16)
 		hexInt = "0x" + hexInt
-		fmt.Println(hexInt)
 
 		url := fmt.Sprintf("https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=%v&boolean=true&apikey=%s", hexInt, os.Getenv("api-key"))
 		get, err := http.Get(url)
@@ -110,11 +107,11 @@ func Init1000Blocks(ctx context.Context, service *service.Service, lastReceiveBl
 		if err != nil {
 			return
 		}
-		err = service.SaveBlockByNumber(ctx, blockByNumber)
+		err = service.SaveTransactionsByBlock(ctx, blockByNumber)
 		if err != nil {
 			return
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 }
 
@@ -136,12 +133,10 @@ func AddNewBlocks(ctx context.Context, lastReceivedBlock int64, url string, serv
 		}
 
 		if newBlock > lastReceivedBlock {
-			fmt.Println("true")
 			var blockByNumber bitmedia_api.BlockByNumber
 			hexInt := strconv.FormatInt(newBlock, 16)
 			hexInt = "0x" + hexInt
-			fmt.Println("addNew")
-			url := fmt.Sprintf("https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=%v&boolean=true&apikey=%s", hexInt, os.Getenv("api-key"))
+			url := fmt.Sprintf("https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=%v&boolean=true&apikey=%s", hexInt, os.Getenv("api-key2"))
 			get, err := http.Get(url)
 			if err != nil {
 				return
@@ -150,13 +145,13 @@ func AddNewBlocks(ctx context.Context, lastReceivedBlock int64, url string, serv
 			if err != nil {
 				return
 			}
-			err = service.SaveBlockByNumber(ctx, blockByNumber)
+			err = service.SaveTransactionsByBlock(ctx, blockByNumber)
 			if err != nil {
 				return
 			}
 			lastReceivedBlock = newBlock
 		}
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
 
 }
